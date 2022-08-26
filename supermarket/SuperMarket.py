@@ -1,6 +1,6 @@
 import datetime
 
-from pydash import py_, sum_, in_range
+from pydash import py_, sum_, interleave
 
 from supermarket.model.item import BuyItem, Cart
 
@@ -18,7 +18,9 @@ class SuperMarket:
         {"product": "lowCarbMonster", "buy": 6, "give_away": "lowCarbMonster", "deal": 1,
          "day_start": datetime.datetime(2022, 6, 1), "day_end": datetime.datetime(2022, 10, 28), "status": "ongoing"},
         {"product": "lowCarbMonster", "buy": 3, "give_away": "coca", "deal": 1,
-         "day_start": datetime.datetime(2022, 6, 1), "day_end": datetime.datetime(2022, 9, 6), "status": "ongoing"}
+         "day_start": datetime.datetime(2022, 6, 1), "day_end": datetime.datetime(2022, 9, 6), "status": "ongoing"},
+        {"product": "coca", "buy": 3, "give_away": "raudiepca", "deal": 1,
+         "day_start": datetime.datetime(2022, 5, 1), "day_end": datetime.datetime(2022, 12, 12), "status": "ongoing"}
     ]
 
     def get_item_price(self, item_name: str, bulk: int):
@@ -49,14 +51,38 @@ class SuperMarket:
 
         return Cart(total=cart_total, items=list_item)
 
-    def get_give_away_info(self, item: BuyItem, buy_date: datetime) -> dict:
-        list_give_away = py_.map(self.give_away_product,
+    def get_all_give_away_for_item_in_cart(self, list_item: list[BuyItem], buy_date: datetime):
+        if not list_item:
+            return None
+
+        # list_give_away = py_.map(list_item, lambda item: self.get_give_away_info(item=item, buy_date=buy_date))
+
+        list_give_away = [self.get_give_away_info(item=item, buy_date=buy_date) for item in list_item]
+        exist_give_awaies = py_.filter(list_give_away, lambda l: l)
+
+        available_give_away = []
+        py_.map(list_give_away, lambda item: available_give_away.append(interleave(
+            available_give_away,
+            list_give_away))
+        )
+        return available_give_away
+
+    def get_give_away_info(self, item: BuyItem, buy_date: datetime) -> [dict]:
+        list_product = py_.filter_(self.give_away_product, lambda give_away: give_away["product"] == item.name)
+
+        list_give_away = py_.map(list_product,
                                  lambda give_away: self.get_total_give_away(give_away=give_away, item=item,
                                                                             buy_date=buy_date))
-        return py_.filter(list_give_away, lambda give_away: give_away)
+        temp =  py_.filter(list_give_away, lambda give_away: give_away)
+
+        return temp
 
     def get_total_give_away(self, give_away: dict, item: BuyItem, buy_date: datetime) -> dict:
-        if give_away["product"] == item.name and give_away["day_start"] <= buy_date <= give_away["day_end"]:
-            total = item.bulk // give_away["buy"] ** give_away["deal"]
-            return {"item": give_away["give_away"], "total": total}
-        return None
+        if give_away["status"] == "end":
+            return None
+
+        if give_away["day_start"] > buy_date or buy_date > give_away["day_end"]:
+            return None
+
+        total = item.bulk // give_away["buy"] ** give_away["deal"]
+        return {"item": give_away["give_away"], "total": total}

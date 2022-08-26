@@ -25,3 +25,15 @@ class TestGetGiveAwayInfo(TestCase):
                 "total": 6
             }
         ]
+
+    def test_it_should_return_none_when_all_give_away_are_pass(self):
+        item = BuyItem(name="lowCarbMonster", total=600, bulk=20)
+        res = SuperMarket().get_give_away_info(item=item, buy_date=datetime.datetime(2022, 11,11))
+
+        assert res == []
+
+    def test_it_should_return_none_when_item_not_have_any_give_away(self):
+        item = BuyItem(name="thit_heo", total=600, bulk=20)
+        res = SuperMarket().get_give_away_info(item=item, buy_date=datetime.datetime(2022, 11,11))
+
+        assert res == []
