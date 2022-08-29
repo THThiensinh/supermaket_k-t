@@ -1,6 +1,6 @@
 import datetime
-
-from pydash import py_, sum_, interleave
+from functools import reduce
+from pydash import py_, sum_
 
 from supermarket.model.item import BuyItem, Cart
 
@@ -53,19 +53,16 @@ class SuperMarket:
 
     def get_all_give_away_for_item_in_cart(self, list_item: list[BuyItem], buy_date: datetime):
         if not list_item:
-            return None
+            return []
 
-        # list_give_away = py_.map(list_item, lambda item: self.get_give_away_info(item=item, buy_date=buy_date))
+        list_give_away = py_.map(list_item, lambda item: self.get_give_away_info(item=item, buy_date=buy_date))
 
-        list_give_away = [self.get_give_away_info(item=item, buy_date=buy_date) for item in list_item]
-        exist_give_awaies = py_.filter(list_give_away, lambda l: l)
+        exist_give_away = py_.filter(list_give_away, lambda give_away: give_away)
+        if not exist_give_away:
+            return []
 
-        available_give_away = []
-        py_.map(list_give_away, lambda item: available_give_away.append(interleave(
-            available_give_away,
-            list_give_away))
-        )
-        return available_give_away
+        return reduce(lambda a, b: a + b, exist_give_away)
+
 
     def get_give_away_info(self, item: BuyItem, buy_date: datetime) -> [dict]:
         list_product = py_.filter_(self.give_away_product, lambda give_away: give_away["product"] == item.name)
@@ -73,9 +70,7 @@ class SuperMarket:
         list_give_away = py_.map(list_product,
                                  lambda give_away: self.get_total_give_away(give_away=give_away, item=item,
                                                                             buy_date=buy_date))
-        temp =  py_.filter(list_give_away, lambda give_away: give_away)
-
-        return temp
+        return py_.filter(list_give_away, lambda give_away: give_away)
 
     def get_total_give_away(self, give_away: dict, item: BuyItem, buy_date: datetime) -> dict:
         if give_away["status"] == "end":
@@ -85,4 +80,4 @@ class SuperMarket:
             return None
 
         total = item.bulk // give_away["buy"] ** give_away["deal"]
-        return {"item": give_away["give_away"], "total": total}
+        return {"item": give_away["give_away"], "total": total, "product": item.name}

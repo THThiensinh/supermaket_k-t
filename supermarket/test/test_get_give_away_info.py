@@ -10,19 +10,22 @@ class TestGetGiveAwayInfo(TestCase):
         item = BuyItem(name="lowCarbMonster", total=600, bulk=20)
         res = SuperMarket().get_give_away_info(item=item, buy_date=datetime.datetime(2022, 10, 25))
 
-        assert res == [{'item': "lowCarbMonster", "total": 3}]
+        assert res == [{'item': "lowCarbMonster", "total": 3, "product": item.name}]
 
     def test_it_should_return_all_available_give_away_when_buy_time_valid_all_give_time(self):
         item = BuyItem(name="lowCarbMonster", total=600, bulk=20)
         res = SuperMarket().get_give_away_info(item=item, buy_date=datetime.datetime(2022, 9, 3))
 
         assert res == [
-            {"item": "lowCarbMonster",
-             "total": 3
+            {
+                "item": "lowCarbMonster",
+                "total": 3,
+                "product": item.name
              },
             {
                 "item": "coca",
-                "total": 6
+                "total": 6,
+                "product": item.name
             }
         ]
 
